@@ -35,7 +35,7 @@
         background-color: #fee2e2;
       }
       .table-container {
-        max-height: 400px; /* Fits ~10 rows on large screens */
+        max-height: 400px; /* Default for mobile */
         overflow-x: auto;
         overflow-y: auto;
       }
@@ -85,7 +85,8 @@
       }
       @media (min-width: 641px) {
         .table-container {
-          overflow-y: hidden; /* No vertical scrollbar on large screens */
+          max-height: 600px; /* Taller for large screens to show ~15 rows */
+          /* overflow-y: auto is inherited, allowing scrollbar when needed */
         }
       }
     </style>
