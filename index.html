@@ -1,601 +1,777 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Client Info Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        white-space: nowrap;
+        padding: 4px;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+      td.contact,
+      td.link {
+        cursor: pointer;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      td.contact:hover,
+      td.link:hover {
+        background-color: #e5e7eb;
+      }
+      tr.yes {
+        background-color: #d1fae5;
+      }
+      tr.no {
+        background-color: #fee2e2;
+      }
+      .table-container {
+        max-height: 400px; /* Fits ~10 rows on large screens */
+        overflow-x: auto;
+        overflow-y: auto;
+      }
+      input,
+      select {
+        font-size: 12px;
+        padding: 4px;
+      }
+      .tab-button {
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+      }
+      tr[draggable="true"] {
+        cursor: move;
+      }
+      tr[draggable="true"]:hover {
+        background-color: #f3f4f6;
+      }
+      @media (max-width: 640px) {
+        th,
+        td {
+          font-size: 10px;
+          padding: 2px;
         }
-        th, td {
-            white-space: nowrap;
-            padding: 4px;
-            font-size: 12px;
-            line-height: 1.25;
+        td.contact,
+        td.link {
+          max-width: 80px;
         }
-        td.contact, td.link {
-            cursor: pointer;
-            max-width: 120px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        input,
+        select {
+          font-size: 10px;
+          padding: 2px;
         }
-        td.contact:hover, td.link:hover {
-            background-color: #e5e7eb;
-        }
-        tr.yes {
-            background-color: #d1fae5;
-        }
-        tr.no {
-            background-color: #fee2e2;
-        }
-        .table-container {
-            max-height: 400px; /* Fits ~10 rows on large screens */
-            overflow-x: auto;
-            overflow-y: auto;
-        }
-        input, select {
-            font-size: 12px;
-            padding: 4px;
+        .date-grid div {
+          padding: 2px;
+          font-size: 10px;
         }
         .tab-button {
-            padding: 8px 16px;
-            font-size: 14px;
-            cursor: pointer;
+          padding: 6px 12px;
+          font-size: 12px;
         }
-        .tab-button.active {
-            background-color: #3b82f6;
-            color: white;
+      }
+      @media (min-width: 641px) {
+        .table-container {
+          overflow-y: hidden; /* No vertical scrollbar on large screens */
         }
-        tr[draggable="true"] {
-            cursor: move;
-        }
-        tr[draggable="true"]:hover {
-            background-color: #f3f4f6;
-        }
-        @media (max-width: 640px) {
-            th, td {
-                font-size: 10px;
-                padding: 2px;
-            }
-            td.contact, td.link {
-                max-width: 80px;
-            }
-            input, select {
-                font-size: 10px;
-                padding: 2px;
-            }
-            .date-grid div {
-                padding: 2px;
-                font-size: 10px;
-            }
-            .tab-button {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-        }
-        @media (min-width: 641px) {
-            .table-container {
-                overflow-y: hidden; /* No vertical scrollbar on large screens */
-            }
-        }
+      }
     </style>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-2 sm:p-4">
-    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-6xl flex flex-col h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)]">
-        <h1 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Client Info Manager</h1>
-        <div class="mb-3 sm:mb-4">
-            <h2 id="date-display" class="text-lg sm:text-xl font-semibold cursor-pointer" onclick="toggleDatePicker()">
-                1 May 2025
-            </h2>
-            <div id="date-picker" class="hidden mt-2 p-3 sm:p-4 bg-gray-50 border rounded-lg">
-                <div class="flex justify-between mb-2">
-                    <select id="month-selector" class="p-1 sm:p-2 border rounded text-xs sm:text-sm" onchange="updateDatePicker()">
-                        <option value="0">January</option>
-                        <option value="1">February</option>
-                        <option value="2">March</option>
-                        <option value="3">April</option>
-                        <option value="4">May</option>
-                        <option value="5">June</option>
-                        <option value="6">July</option>
-                        <option value="7">August</option>
-                        <option value="8">September</option>
-                        <option value="9">October</option>
-                        <option value="10">November</option>
-                        <option value="11">December</option>
-                    </select>
-                    <input type="number" id="year-selector" class="p-1 sm:p-2 border rounded w-16 sm:w-20 text-xs sm:text-sm" value="2025" min="2000" max="2099" onchange="updateDatePicker()">
-                </div>
-                <div id="date-grid" class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm date-grid"></div>
-            </div>
+  </head>
+  <body
+    class="bg-gray-100 flex items-center justify-center min-h-screen p-2 sm:p-4"
+  >
+    <div
+      class="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-6xl flex flex-col h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)]"
+    >
+      <h1 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
+        Client Info Manager
+      </h1>
+      <div class="mb-3 sm:mb-4">
+        <h2
+          id="date-display"
+          class="text-lg sm:text-xl font-semibold cursor-pointer"
+          onclick="toggleDatePicker()"
+        >
+          1 May 2025
+        </h2>
+        <div
+          id="date-picker"
+          class="hidden mt-2 p-3 sm:p-4 bg-gray-50 border rounded-lg"
+        >
+          <div class="flex justify-between mb-2">
+            <select
+              id="month-selector"
+              class="p-1 sm:p-2 border rounded text-xs sm:text-sm"
+              onchange="updateDatePicker()"
+            >
+              <option value="0">January</option>
+              <option value="1">February</option>
+              <option value="2">March</option>
+              <option value="3">April</option>
+              <option value="4">May</option>
+              <option value="5">June</option>
+              <option value="6">July</option>
+              <option value="7">August</option>
+              <option value="8">September</option>
+              <option value="9">October</option>
+              <option value="10">November</option>
+              <option value="11">December</option>
+            </select>
+            <input
+              type="number"
+              id="year-selector"
+              class="p-1 sm:p-2 border rounded w-16 sm:w-20 text-xs sm:text-sm"
+              value="2025"
+              min="2000"
+              max="2099"
+              onchange="updateDatePicker()"
+            />
+          </div>
+          <div
+            id="date-grid"
+            class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm date-grid"
+          ></div>
         </div>
-        <div class="mb-3 sm:mb-4">
-            <h3 class="text-base sm:text-lg font-semibold mb-2">Add New Client</h3>
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="client-name" class="border rounded flex-1" placeholder="Name">
-                <input type="text" id="client-market" class="border rounded flex-1" placeholder="Market/Category">
-                <input type="text" id="client-page" class="border rounded flex-1" placeholder="Page/Link">
-                <input type="text" id="client-contact" class="border rounded flex-1" placeholder="Contact/Email (Optional)">
-                <select id="client-need" class="border rounded">
-                    <option value="Logo/PFP">Logo/PFP</option>
-                    <option value="Website">Website</option>
-                    <option value="Video">Video</option>
-                </select>
-                <button onclick="addClient()" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 text-xs sm:text-sm">Add</button>
-            </div>
+      </div>
+      <div class="mb-3 sm:mb-4">
+        <h3 class="text-base sm:text-lg font-semibold mb-2">Add New Client</h3>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            id="client-name"
+            class="border rounded flex-1"
+            placeholder="Name"
+          />
+          <input
+            type="text"
+            id="client-market"
+            class="border rounded flex-1"
+            placeholder="Market/Category"
+          />
+          <input
+            type="text"
+            id="client-page"
+            class="border rounded flex-1"
+            placeholder="Page/Link"
+          />
+          <input
+            type="text"
+            id="client-contact"
+            class="border rounded flex-1"
+            placeholder="Contact/Email (Optional)"
+          />
+          <select id="client-need" class="border rounded">
+            <option value="Logo/PFP">Logo/PFP</option>
+            <option value="Website">Website</option>
+            <option value="Video">Video</option>
+          </select>
+          <button
+            onclick="addClient()"
+            class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 text-xs sm:text-sm"
+          >
+            Add
+          </button>
         </div>
-        <div class="mb-3 sm:mb-4 flex gap-2">
-            <button id="clients-tab" class="tab-button bg-gray-200 rounded active" onclick="showTab('clients')">Clients</button>
-            <button id="favorites-tab" class="tab-button bg-gray-200 rounded" onclick="showTab('favorites')">Favorites</button>
+      </div>
+      <div class="mb-3 sm:mb-4 flex gap-2">
+        <button
+          id="clients-tab"
+          class="tab-button bg-gray-200 rounded active"
+          onclick="showTab('clients')"
+        >
+          Clients
+        </button>
+        <button
+          id="favorites-tab"
+          class="tab-button bg-gray-200 rounded"
+          onclick="showTab('favorites')"
+        >
+          Favorites
+        </button>
+      </div>
+      <div class="flex-1 table-container">
+        <div id="clients-content">
+          <table class="border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="border">Date</th>
+                <th class="border">Name</th>
+                <th class="border">Market/Category</th>
+                <th class="border">Page/Link</th>
+                <th class="border">Contact/Email</th>
+                <th class="border">Need</th>
+                <th class="border">First Contact</th>
+                <th class="border">Follow Up</th>
+                <th class="border">Can Be?</th>
+                <th class="border">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="client-table-body"></tbody>
+          </table>
         </div>
-        <div class="flex-1 table-container">
-            <div id="clients-content">
-                <table class="border-collapse">
-                    <thead>
-                        <tr class="bg-gray-200">
-                            <th class="border">Date</th>
-                            <th class="border">Name</th>
-                            <th class="border">Market/Category</th>
-                            <th class="border">Page/Link</th>
-                            <th class="border">Contact/Email</th>
-                            <th class="border">Need</th>
-                            <th class="border">First Contact</th>
-                            <th class="border">Follow Up</th>
-                            <th class="border">Can Be?</th>
-                            <th class="border">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="client-table-body"></tbody>
-                </table>
-            </div>
-            <div id="favorites-content" class="hidden">
-                <table class="border-collapse">
-                    <thead>
-                        <tr class="bg-gray-200">
-                            <th class="border">Date</th>
-                            <th class="border">Name</th>
-                            <th class="border">Market/Category</th>
-                            <th class="border">Page/Link</th>
-                            <th class="border">Contact/Email</th>
-                            <th class="border">Need</th>
-                        </tr>
-                    </thead>
-                    <tbody id="favorites-table-body"></tbody>
-                </table>
-            </div>
+        <div id="favorites-content" class="hidden">
+          <table class="border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="border">Date</th>
+                <th class="border">Name</th>
+                <th class="border">Market/Category</th>
+                <th class="border">Page/Link</th>
+                <th class="border">Contact/Email</th>
+                <th class="border">Need</th>
+              </tr>
+            </thead>
+            <tbody id="favorites-table-body"></tbody>
+          </table>
         </div>
-        <div class="mt-3 sm:mt-4 flex gap-2">
-            <button onclick="exportData()" class="bg-green-500 text-white p-2 rounded hover:bg-green-600 text-xs sm:text-sm">Export Data</button>
-            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
-            <button onclick="document.getElementById('import-file').click()" class="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 text-xs sm:text-sm">Import Data</button>
-        </div>
+      </div>
+      <div class="mt-3 sm:mt-4 flex gap-2">
+        <button
+          onclick="exportData()"
+          class="bg-green-500 text-white p-2 rounded hover:bg-green-600 text-xs sm:text-sm"
+        >
+          Export Data
+        </button>
+        <input
+          type="file"
+          id="import-file"
+          accept=".json"
+          class="hidden"
+          onchange="importData(event)"
+        />
+        <button
+          onclick="document.getElementById('import-file').click()"
+          class="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 text-xs sm:text-sm"
+        >
+          Import Data
+        </button>
+      </div>
     </div>
     <script>
-        let clients = {};
-        let favoritesOrder = [];
-        let selectedDate = new Date();
-        let currentTab = 'clients';
+      let clients = {};
+      let favoritesOrder = [];
+      let selectedDate = new Date();
+      let currentTab = "clients";
 
-        function loadData() {
+      function loadData() {
+        try {
+          const savedClients = localStorage.getItem("client_info");
+          clients = savedClients ? JSON.parse(savedClients) : {};
+          const savedFavorites = localStorage.getItem("favorites_order");
+          favoritesOrder = savedFavorites ? JSON.parse(savedFavorites) : [];
+          selectedDate = new Date(); // Set to current date on load
+          updateDatePicker();
+          updateDateDisplay();
+          showTab(currentTab);
+        } catch (err) {
+          console.error("Error loading data:", err);
+        }
+      }
+
+      function saveClients() {
+        try {
+          localStorage.setItem("client_info", JSON.stringify(clients));
+        } catch (err) {
+          console.error("Error saving clients:", err);
+        }
+      }
+
+      function saveFavoritesOrder() {
+        try {
+          localStorage.setItem(
+            "favorites_order",
+            JSON.stringify(favoritesOrder)
+          );
+        } catch (err) {
+          console.error("Error saving favorites order:", err);
+        }
+      }
+
+      function exportData() {
+        try {
+          const data = { clients, favoritesOrder };
+          const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "client_info.json";
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error("Error exporting data:", err);
+        }
+      }
+
+      function importData(event) {
+        try {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
             try {
-                const savedClients = localStorage.getItem("client_info");
-                clients = savedClients ? JSON.parse(savedClients) : {};
-                const savedFavorites = localStorage.getItem("favorites_order");
-                favoritesOrder = savedFavorites ? JSON.parse(savedFavorites) : [];
-                selectedDate = new Date(); // Set to current date on load
-                updateDatePicker();
-                updateDateDisplay();
-                showTab(currentTab);
+              const data = JSON.parse(e.target.result);
+              clients = data.clients || {};
+              favoritesOrder = data.favoritesOrder || [];
+              saveClients();
+              saveFavoritesOrder();
+              updateDatePicker();
+              updateDateDisplay();
+              showTab(currentTab);
             } catch (err) {
-                console.error("Error loading data:", err);
+              console.error("Error parsing imported data:", err);
             }
+          };
+          reader.readAsText(file);
+          document.getElementById("import-file").value = "";
+        } catch (err) {
+          console.error("Error importing data:", err);
+        }
+      }
+
+      function toggleDatePicker() {
+        document.getElementById("date-picker").classList.toggle("hidden");
+      }
+
+      function updateDatePicker() {
+        const month = selectedDate.getMonth();
+        const year = selectedDate.getFullYear();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const grid = document.getElementById("date-grid");
+        grid.innerHTML = "";
+
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        days.forEach((day) => {
+          const div = document.createElement("div");
+          div.textContent = day;
+          div.className = "font-bold";
+          grid.appendChild(div);
+        });
+
+        for (let i = 0; i < firstDay; i++) {
+          grid.appendChild(document.createElement("div"));
         }
 
-        function saveClients() {
-            try {
-                localStorage.setItem("client_info", JSON.stringify(clients));
-            } catch (err) {
-                console.error("Error saving clients:", err);
-            }
+        for (let day = 1; day <= daysInMonth; day++) {
+          const div = document.createElement("div");
+          div.textContent = day;
+          div.className =
+            day === selectedDate.getDate()
+              ? "bg-blue-500 text-white p-1 sm:p-2 rounded"
+              : "p-1 sm:p-2";
+          div.onclick = () => {
+            selectedDate.setDate(day);
+            renderDatePicker();
+            updateDateDisplay();
+            if (currentTab === "clients") renderClients();
+            else renderFavorites();
+          };
+          grid.appendChild(div);
         }
 
-        function saveFavoritesOrder() {
-            try {
-                localStorage.setItem("favorites_order", JSON.stringify(favoritesOrder));
-            } catch (err) {
-                console.error("Error saving favorites order:", err);
-            }
+        document.getElementById("month-selector").value = month;
+        document.getElementById("year-selector").value = year;
+      }
+
+      function updateDateDisplay() {
+        const options = { day: "numeric", month: "long", year: "numeric" };
+        document.getElementById("date-display").textContent =
+          selectedDate.toLocaleDateString("en-US", options);
+      }
+
+      function getDateKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(date.getDate()).padStart(2, "0")}`;
+      }
+
+      function addClient() {
+        try {
+          const name = document.getElementById("client-name").value.trim();
+          const market = document.getElementById("client-market").value.trim();
+          const page = document.getElementById("client-page").value.trim();
+          const contact = document
+            .getElementById("client-contact")
+            .value.trim();
+          const need = document.getElementById("client-need").value;
+
+          if (!name || !market || !page || !need) {
+            alert(
+              "Please fill all required fields (Name, Market/Category, Page/Link, Need)"
+            );
+            return;
+          }
+
+          const dateKey = getDateKey(selectedDate);
+          if (!clients[dateKey]) clients[dateKey] = [];
+
+          const newClient = {
+            id: Date.now(),
+            name,
+            market,
+            page,
+            contact,
+            need,
+            firstContact: false,
+            followUp: false,
+            canBe: "Pending",
+          };
+          clients[dateKey].push(newClient);
+
+          saveClients();
+          showTab(currentTab);
+          resetForm();
+        } catch (err) {
+          console.error("Error adding client:", err);
         }
+      }
 
-        function exportData() {
-            try {
-                const data = { clients, favoritesOrder };
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "client_info.json";
-                a.click();
-                URL.revokeObjectURL(url);
-            } catch (err) {
-                console.error("Error exporting data:", err);
-            }
+      function resetForm() {
+        document.getElementById("client-name").value = "";
+        document.getElementById("client-market").value = "";
+        document.getElementById("client-page").value = "";
+        document.getElementById("client-contact").value = "";
+        document.getElementById("client-need").value = "Logo/PFP";
+      }
+
+      function showTab(tab) {
+        currentTab = tab;
+        const clientsTab = document.getElementById("clients-tab");
+        const favoritesTab = document.getElementById("favorites-tab");
+        const clientsContent = document.getElementById("clients-content");
+        const favoritesContent = document.getElementById("favorites-content");
+
+        if (tab === "clients") {
+          clientsTab.classList.add("active");
+          favoritesTab.classList.remove("active");
+          clientsContent.classList.remove("hidden");
+          favoritesContent.classList.add("hidden");
+          renderClients();
+        } else {
+          clientsTab.classList.remove("active");
+          favoritesTab.classList.add("active");
+          clientsContent.classList.add("hidden");
+          favoritesContent.classList.remove("hidden");
+          renderFavorites();
         }
+      }
 
-        function importData(event) {
-            try {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        clients = data.clients || {};
-                        favoritesOrder = data.favoritesOrder || [];
-                        saveClients();
-                        saveFavoritesOrder();
-                        updateDatePicker();
-                        updateDateDisplay();
-                        showTab(currentTab);
-                    } catch (err) {
-                        console.error("Error parsing imported data:", err);
-                    }
-                };
-                reader.readAsText(file);
-                document.getElementById("import-file").value = "";
-            } catch (err) {
-                console.error("Error importing data:", err);
-            }
-        }
+      function renderClients() {
+        try {
+          const tbody = document.getElementById("client-table-body");
+          tbody.innerHTML = "";
+          const dateKey = getDateKey(selectedDate);
+          const dateStr = selectedDate.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
 
-        function toggleDatePicker() {
-            document.getElementById("date-picker").classList.toggle("hidden");
-        }
-
-        function updateDatePicker() {
-            const month = selectedDate.getMonth();
-            const year = selectedDate.getFullYear();
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const grid = document.getElementById("date-grid");
-            grid.innerHTML = "";
-
-            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-            days.forEach(day => {
-                const div = document.createElement("div");
-                div.textContent = day;
-                div.className = "font-bold";
-                grid.appendChild(div);
-            });
-
-            for (let i = 0; i < firstDay; i++) {
-                grid.appendChild(document.createElement("div"));
-            }
-
-            for (let day = 1; day <= daysInMonth; day++) {
-                const div = document.createElement("div");
-                div.textContent = day;
-                div.className = day === selectedDate.getDate() ? "bg-blue-500 text-white p-1 sm:p-2 rounded" : "p-1 sm:p-2";
-                div.onclick = () => {
-                    selectedDate.setDate(day);
-                    renderDatePicker();
-                    updateDateDisplay();
-                    if (currentTab === 'clients') renderClients();
-                    else renderFavorites();
-                };
-                grid.appendChild(div);
-            }
-
-            document.getElementById("month-selector").value = month;
-            document.getElementById("year-selector").value = year;
-        }
-
-        function updateDateDisplay() {
-            const options = { day: "numeric", month: "long", year: "numeric" };
-            document.getElementById("date-display").textContent = selectedDate.toLocaleDateString("en-US", options);
-        }
-
-        function getDateKey(date) {
-            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-        }
-
-        function addClient() {
-            try {
-                const name = document.getElementById("client-name").value.trim();
-                const market = document.getElementById("client-market").value.trim();
-                const page = document.getElementById("client-page").value.trim();
-                const contact = document.getElementById("client-contact").value.trim();
-                const need = document.getElementById("client-need").value;
-
-                if (!name || !market || !page || !need) {
-                    alert("Please fill all required fields (Name, Market/Category, Page/Link, Need)");
-                    return;
-                }
-
-                const dateKey = getDateKey(selectedDate);
-                if (!clients[dateKey]) clients[dateKey] = [];
-
-                const newClient = {
-                    id: Date.now(),
-                    name,
-                    market,
-                    page,
-                    contact,
-                    need,
-                    firstContact: false,
-                    followUp: false,
-                    canBe: "Pending"
-                };
-                clients[dateKey].push(newClient);
-
-                saveClients();
-                showTab(currentTab);
-                resetForm();
-            } catch (err) {
-                console.error("Error adding client:", err);
-            }
-        }
-
-        function resetForm() {
-            document.getElementById("client-name").value = "";
-            document.getElementById("client-market").value = "";
-            document.getElementById("client-page").value = "";
-            document.getElementById("client-contact").value = "";
-            document.getElementById("client-need").value = "Logo/PFP";
-        }
-
-        function showTab(tab) {
-            currentTab = tab;
-            const clientsTab = document.getElementById("clients-tab");
-            const favoritesTab = document.getElementById("favorites-tab");
-            const clientsContent = document.getElementById("clients-content");
-            const favoritesContent = document.getElementById("favorites-content");
-
-            if (tab === 'clients') {
-                clientsTab.classList.add("active");
-                favoritesTab.classList.remove("active");
-                clientsContent.classList.remove("hidden");
-                favoritesContent.classList.add("hidden");
-                renderClients();
-            } else {
-                clientsTab.classList.remove("active");
-                favoritesTab.classList.add("active");
-                clientsContent.classList.add("hidden");
-                favoritesContent.classList.remove("hidden");
-                renderFavorites();
-            }
-        }
-
-        function renderClients() {
-            try {
-                const tbody = document.getElementById("client-table-body");
-                tbody.innerHTML = "";
-                const dateKey = getDateKey(selectedDate);
-                const dateStr = selectedDate.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
-
-                (clients[dateKey] || []).forEach(client => {
-                    const row = document.createElement("tr");
-                    row.className = client.canBe === "Yes" ? "yes" : client.canBe === "No" ? "no" : "";
-                    row.innerHTML = `
+          (clients[dateKey] || []).forEach((client) => {
+            const row = document.createElement("tr");
+            row.className =
+              client.canBe === "Yes"
+                ? "yes"
+                : client.canBe === "No"
+                ? "no"
+                : "";
+            row.innerHTML = `
                         <td class="border">${dateStr}</td>
                         <td class="border">${client.name}</td>
                         <td class="border">${client.market}</td>
-                        <td class="border link" onclick="openLink('${client.page}')">${client.page || "N/A"}</td>
-                        <td class="border contact" onclick="copyToClipboard('${client.contact}')">${client.contact || "N/A"}</td>
-                        <td class="border">${client.need}</td>
+                        <td class="border link" onclick="openLink('${
+                          client.page
+                        }')">${client.page || "N/A"}</td>
+                        <td class="border contact" onclick="copyToClipboard('${
+                          client.contact
+                        }')">${client.contact || "N/A"}</td>
                         <td class="border">
-                            <input type="checkbox" ${client.firstContact ? "checked" : ""} onchange="updateFirstContact(${client.id}, this.checked)" class="h-3 w-3">
-                        </td>
-                        <td class="border">
-                            <input type="checkbox" ${client.followUp ? "checked" : ""} onchange="updateFollowUp(${client.id}, this.checked)" class="h-3 w-3">
-                        </td>
-                        <td class="border">
-                            <select onchange="updateCanBe(${client.id}, this.value)" class="border rounded text-xs">
-                                <option value="Pending" ${client.canBe === "Pending" ? "selected" : ""}>Pending</option>
-                                <option value="Yes" ${client.canBe === "Yes" ? "selected" : ""}>Yes</option>
-                                <option value="No" ${client.canBe === "No" ? "selected" : ""}>No</option>
+                            <select onchange="updateNeed(${
+                              client.id
+                            }, this.value)" class="border rounded text-xs">
+                                <option value="Logo/PFP" ${
+                                  client.need === "Logo/PFP" ? "selected" : ""
+                                }>Logo/PFP</option>
+                                <option value="Website" ${
+                                  client.need === "Website" ? "selected" : ""
+                                }>Website</option>
+                                <option value="Video" ${
+                                  client.need === "Video" ? "selected" : ""
+                                }>Video</option>
                             </select>
                         </td>
                         <td class="border">
-                            <button onclick="deleteClient(${client.id})" class="bg-red-500 text-white p-1 px-2 rounded hover:bg-red-600 text-xs">Delete</button>
+                            <input type="checkbox" ${
+                              client.firstContact ? "checked" : ""
+                            } onchange="updateFirstContact(${
+              client.id
+            }, this.checked)" class="h-3 w-3">
+                        </td>
+                        <td class="border">
+                            <input type="checkbox" ${
+                              client.followUp ? "checked" : ""
+                            } onchange="updateFollowUp(${
+              client.id
+            }, this.checked)" class="h-3 w-3">
+                        </td>
+                        <td class="border">
+                            <select onchange="updateCanBe(${
+                              client.id
+                            }, this.value)" class="border rounded text-xs">
+                                <option value="Pending" ${
+                                  client.canBe === "Pending" ? "selected" : ""
+                                }>Pending</option>
+                                <option value="Yes" ${
+                                  client.canBe === "Yes" ? "selected" : ""
+                                }>Yes</option>
+                                <option value="No" ${
+                                  client.canBe === "No" ? "selected" : ""
+                                }>No</option>
+                            </select>
+                        </td>
+                        <td class="border">
+                            <button onclick="deleteClient(${
+                              client.id
+                            })" class="bg-red-500 text-white p-1 px-2 rounded hover:bg-red-600 text-xs">Delete</button>
                         </td>
                     `;
-                    tbody.appendChild(row);
-                });
-            } catch (err) {
-                console.error("Error rendering clients:", err);
-            }
+            tbody.appendChild(row);
+          });
+        } catch (err) {
+          console.error("Error rendering clients:", err);
         }
+      }
 
-        function renderFavorites() {
-            try {
-                const tbody = document.getElementById("favorites-table-body");
-                tbody.innerHTML = "";
-                const favorites = getFavorites();
+      function renderFavorites() {
+        try {
+          const tbody = document.getElementById("favorites-table-body");
+          tbody.innerHTML = "";
+          const favorites = getFavorites();
 
-                favorites.forEach(client => {
-                    const row = document.createElement("tr");
-                    row.setAttribute("draggable", "true");
-                    row.setAttribute("data-id", client.id);
-                    row.addEventListener("dragstart", handleDragStart);
-                    row.addEventListener("dragover", handleDragOver);
-                    row.addEventListener("dragenter", handleDragEnter);
-                    row.addEventListener("drop", handleDrop);
-                    row.innerHTML = `
+          favorites.forEach((client) => {
+            const row = document.createElement("tr");
+            row.setAttribute("draggable", "true");
+            row.setAttribute("data-id", client.id);
+            row.addEventListener("dragstart", handleDragStart);
+            row.addEventListener("dragover", handleDragOver);
+            row.addEventListener("dragenter", handleDragEnter);
+            row.addEventListener("drop", handleDrop);
+            row.innerHTML = `
                         <td class="border">${client.dateStr}</td>
                         <td class="border">${client.name}</td>
                         <td class="border">${client.market}</td>
-                        <td class="border link" onclick="openLink('${client.page}')">${client.page || "N/A"}</td>
-                        <td class="border contact" onclick="copyToClipboard('${client.contact}')">${client.contact || "N/A"}</td>
+                        <td class="border link" onclick="openLink('${
+                          client.page
+                        }')">${client.page || "N/A"}</td>
+                        <td class="border contact" onclick="copyToClipboard('${
+                          client.contact
+                        }')">${client.contact || "N/A"}</td>
                         <td class="border">${client.need}</td>
                     `;
-                    tbody.appendChild(row);
-                });
-            } catch (err) {
-                console.error("Error rendering favorites:", err);
+            tbody.appendChild(row);
+          });
+        } catch (err) {
+          console.error("Error rendering favorites:", err);
+        }
+      }
+
+      function getFavorites() {
+        const favorites = [];
+        Object.keys(clients).forEach((dateKey) => {
+          clients[dateKey].forEach((client) => {
+            if (client.canBe === "Yes") {
+              favorites.push({
+                ...client,
+                dateKey,
+                dateStr: new Date(dateKey).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }),
+              });
             }
-        }
-
-        function getFavorites() {
-            const favorites = [];
-            Object.keys(clients).forEach(dateKey => {
-                clients[dateKey].forEach(client => {
-                    if (client.canBe === "Yes") {
-                        favorites.push({
-                            ...client,
-                            dateKey,
-                            dateStr: new Date(dateKey).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" })
-                        });
-                    }
-                });
-            });
-
-            // Sort favorites based on favoritesOrder
-            if (favoritesOrder.length > 0) {
-                const orderedFavorites = [];
-                const unorderedFavorites = favorites.filter(fav => !favoritesOrder.includes(fav.id));
-                favoritesOrder.forEach(id => {
-                    const fav = favorites.find(f => f.id === id);
-                    if (fav) orderedFavorites.push(fav);
-                });
-                return [...orderedFavorites, ...unorderedFavorites];
-            }
-            return favorites;
-        }
-
-        let dragSrcEl = null;
-
-        function handleDragStart(e) {
-            dragSrcEl = this;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.outerHTML);
-        }
-
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
-
-        function handleDragEnter(e) {
-            this.classList.add('bg-gray-300');
-        }
-
-        function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            if (dragSrcEl !== this) {
-                const srcId = parseInt(dragSrcEl.getAttribute('data-id'));
-                const destId = parseInt(this.getAttribute('data-id'));
-                const srcIndex = favoritesOrder.indexOf(srcId);
-                const destIndex = favoritesOrder.indexOf(destId);
-
-                if (srcIndex !== -1 && destIndex !== -1) {
-                    // Reorder within favoritesOrder
-                    favoritesOrder.splice(srcIndex, 1);
-                    favoritesOrder.splice(destIndex, 0, srcId);
-                } else if (srcIndex !== -1) {
-                    // Move src to dest position
-                    favoritesOrder.splice(srcIndex, 1);
-                    favoritesOrder.splice(favoritesOrder.indexOf(destId) + 1, 0, srcId);
-                } else if (destIndex !== -1) {
-                    // Add src to dest position
-                    favoritesOrder.splice(destIndex + 1, 0, srcId);
-                } else {
-                    // Add new favorite
-                    favoritesOrder.push(srcId);
-                }
-
-                saveFavoritesOrder();
-                renderFavorites();
-            }
-            this.classList.remove('bg-gray-300');
-            return false;
-        }
-
-        function openLink(url) {
-            if (url && url !== "N/A") {
-                const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
-                window.open(formattedUrl, "_blank");
-            }
-        }
-
-        function copyToClipboard(text) {
-            if (text && text !== "N/A") {
-                navigator.clipboard.writeText(text).catch(err => {
-                    console.error("Error copying to clipboard:", err);
-                });
-            }
-        }
-
-        function updateFirstContact(id, checked) {
-            try {
-                const dateKey = getDateKey(selectedDate);
-                clients[dateKey] = clients[dateKey].map(client =>
-                    client.id === id ? { ...client, firstContact: checked } : client
-                );
-                saveClients();
-                showTab(currentTab);
-            } catch (err) {
-                console.error("Error updating First Contact:", err);
-            }
-        }
-
-        function updateFollowUp(id, checked) {
-            try {
-                const dateKey = getDateKey(selectedDate);
-                clients[dateKey] = clients[dateKey].map(client =>
-                    client.id === id ? { ...client, followUp: checked } : client
-                );
-                saveClients();
-                showTab(currentTab);
-            } catch (err) {
-                console.error("Error updating Follow Up:", err);
-            }
-        }
-
-        function updateCanBe(id, value) {
-            try {
-                const dateKey = getDateKey(selectedDate);
-                clients[dateKey] = clients[dateKey].map(client =>
-                    client.id === id ? { ...client, canBe: value } : client
-                );
-                if (value === "Yes" && !favoritesOrder.includes(id)) {
-                    favoritesOrder.push(id);
-                    saveFavoritesOrder();
-                } else if (value !== "Yes" && favoritesOrder.includes(id)) {
-                    favoritesOrder = favoritesOrder.filter(favId => favId !== id);
-                    saveFavoritesOrder();
-                }
-                saveClients();
-                showTab(currentTab);
-            } catch (err) {
-                console.error("Error updating Can Be:", err);
-            }
-        }
-
-        function deleteClient(id) {
-            try {
-                const dateKey = getDateKey(selectedDate);
-                clients[dateKey] = clients[dateKey].filter(client => client.id !== id);
-                if (clients[dateKey].length === 0) delete clients[dateKey];
-                favoritesOrder = favoritesOrder.filter(favId => favId !== id);
-                saveClients();
-                saveFavoritesOrder();
-                showTab(currentTab);
-            } catch (err) {
-                console.error("Error deleting client:", err);
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            loadData();
+          });
         });
+
+        // Sort favorites based on favoritesOrder
+        if (favoritesOrder.length > 0) {
+          const orderedFavorites = [];
+          const unorderedFavorites = favorites.filter(
+            (fav) => !favoritesOrder.includes(fav.id)
+          );
+          favoritesOrder.forEach((id) => {
+            const fav = favorites.find((f) => f.id === id);
+            if (fav) orderedFavorites.push(fav);
+          });
+          return [...orderedFavorites, ...unorderedFavorites];
+        }
+        return favorites;
+      }
+
+      let dragSrcEl = null;
+
+      function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/html", this.outerHTML);
+      }
+
+      function handleDragOver(e) {
+        if (e.preventDefault) {
+          e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = "move";
+        return false;
+      }
+
+      function handleDragEnter(e) {
+        this.classList.add("bg-gray-300");
+      }
+
+      function handleDrop(e) {
+        if (e.stopPropagation) {
+          e.stopPropagation();
+        }
+        if (dragSrcEl !== this) {
+          const srcId = parseInt(dragSrcEl.getAttribute("data-id"));
+          const destId = parseInt(this.getAttribute("data-id"));
+          const srcIndex = favoritesOrder.indexOf(srcId);
+          const destIndex = favoritesOrder.indexOf(destId);
+
+          if (srcIndex !== -1 && destIndex !== -1) {
+            // Reorder within favoritesOrder
+            favoritesOrder.splice(srcIndex, 1);
+            favoritesOrder.splice(destIndex, 0, srcId);
+          } else if (srcIndex !== -1) {
+            // Move src to dest position
+            favoritesOrder.splice(srcIndex, 1);
+            favoritesOrder.splice(favoritesOrder.indexOf(destId) + 1, 0, srcId);
+          } else if (destIndex !== -1) {
+            // Add src to dest position
+            favoritesOrder.splice(destIndex + 1, 0, srcId);
+          } else {
+            // Add new favorite
+            favoritesOrder.push(srcId);
+          }
+
+          saveFavoritesOrder();
+          renderFavorites();
+        }
+        this.classList.remove("bg-gray-300");
+        return false;
+      }
+
+      function openLink(url) {
+        if (url && url !== "N/A") {
+          const formattedUrl = url.match(/^https?:\/\//)
+            ? url
+            : `https://${url}`;
+          window.open(formattedUrl, "_blank");
+        }
+      }
+
+      function copyToClipboard(text) {
+        if (text && text !== "N/A") {
+          navigator.clipboard.writeText(text).catch((err) => {
+            console.error("Error copying to clipboard:", err);
+          });
+        }
+      }
+
+      function updateFirstContact(id, checked) {
+        try {
+          const dateKey = getDateKey(selectedDate);
+          clients[dateKey] = clients[dateKey].map((client) =>
+            client.id === id ? { ...client, firstContact: checked } : client
+          );
+          saveClients();
+          showTab(currentTab);
+        } catch (err) {
+          console.error("Error updating First Contact:", err);
+        }
+      }
+
+      function updateFollowUp(id, checked) {
+        try {
+          const dateKey = getDateKey(selectedDate);
+          clients[dateKey] = clients[dateKey].map((client) =>
+            client.id === id ? { ...client, followUp: checked } : client
+          );
+          saveClients();
+          showTab(currentTab);
+        } catch (err) {
+          console.error("Error updating Follow Up:", err);
+        }
+      }
+
+      function updateCanBe(id, value) {
+        try {
+          const dateKey = getDateKey(selectedDate);
+          clients[dateKey] = clients[dateKey].map((client) =>
+            client.id === id ? { ...client, canBe: value } : client
+          );
+          if (value === "Yes" && !favoritesOrder.includes(id)) {
+            favoritesOrder.push(id);
+            saveFavoritesOrder();
+          } else if (value !== "Yes" && favoritesOrder.includes(id)) {
+            favoritesOrder = favoritesOrder.filter((favId) => favId !== id);
+            saveFavoritesOrder();
+          }
+          saveClients();
+          showTab(currentTab);
+        } catch (err) {
+          console.error("Error updating Can Be:", err);
+        }
+      }
+
+      function updateNeed(id, value) {
+        try {
+          const dateKey = getDateKey(selectedDate);
+          clients[dateKey] = clients[dateKey].map((client) =>
+            client.id === id ? { ...client, need: value } : client
+          );
+          saveClients();
+          showTab(currentTab);
+        } catch (err) {
+          console.error("Error updating Need:", err);
+        }
+      }
+
+      function deleteClient(id) {
+        try {
+          const dateKey = getDateKey(selectedDate);
+          clients[dateKey] = clients[dateKey].filter(
+            (client) => client.id !== id
+          );
+          if (clients[dateKey].length === 0) delete clients[dateKey];
+          favoritesOrder = favoritesOrder.filter((favId) => favId !== id);
+          saveClients();
+          saveFavoritesOrder();
+          showTab(currentTab);
+        } catch (err) {
+          console.error("Error deleting client:", err);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadData();
+      });
     </script>
-</body>
+  </body>
 </html>
