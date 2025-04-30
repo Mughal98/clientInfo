@@ -413,7 +413,7 @@
                         <td class="border">${dateStr}</td>
                         <td class="border">${client.name}</td>
                         <td class="border">${client.market}</td>
-                        <td class="border link" onclick="copyToClipboard('${
+                        <td class="border link" onclick="openLink('${
                           client.page
                         }')">${client.page || "N/A"}</td>
                         <td class="border contact" onclick="copyToClipboard('${
@@ -459,6 +459,16 @@
           });
         } catch (err) {
           console.error("Error rendering clients:", err);
+        }
+      }
+
+      function openLink(url) {
+        if (url && url !== "N/A") {
+          // Ensure the URL has a protocol; if not, prepend "https://"
+          const formattedUrl = url.match(/^https?:\/\//)
+            ? url
+            : `https://${url}`;
+          window.open(formattedUrl, "_blank");
         }
       }
 
