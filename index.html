@@ -35,7 +35,7 @@
         background-color: #fee2e2;
       }
       .table-container {
-        max-height: 400px; /* Default for mobile */
+        max-height: 400px;
         overflow-x: auto;
         overflow-y: auto;
       }
@@ -85,8 +85,7 @@
       }
       @media (min-width: 641px) {
         .table-container {
-          max-height: 600px; /* Taller for large screens to show ~15 rows */
-          /* overflow-y: auto is inherited, allowing scrollbar when needed */
+          max-height: 600px;
         }
       }
     </style>
@@ -116,7 +115,7 @@
             <select
               id="month-selector"
               class="p-1 sm:p-2 border rounded text-xs sm:text-sm"
-              onchange="updateDatePicker()"
+              onchange="updateDateFromSelectors()"
             >
               <option value="0">January</option>
               <option value="1">February</option>
@@ -138,7 +137,7 @@
               value="2025"
               min="2000"
               max="2099"
-              onchange="updateDatePicker()"
+              onchange="updateDateFromSelectors()"
             />
           </div>
           <div
@@ -264,7 +263,7 @@
     <script>
       let clients = {};
       let favoritesOrder = [];
-      let selectedDate = new Date();
+      let selectedDate = new Date(2025, 4, 1);
       let currentTab = "clients";
 
       function loadData() {
@@ -273,7 +272,6 @@
           clients = savedClients ? JSON.parse(savedClients) : {};
           const savedFavorites = localStorage.getItem("favorites_order");
           favoritesOrder = savedFavorites ? JSON.parse(savedFavorites) : [];
-          selectedDate = new Date(); // Set to current date on load
           updateDatePicker();
           updateDateDisplay();
           showTab(currentTab);
@@ -348,51 +346,77 @@
         document.getElementById("date-picker").classList.toggle("hidden");
       }
 
+      function updateDateFromSelectors() {
+        try {
+          const month = parseInt(document.getElementById("month-selector").value);
+          const year = parseInt(document.getElementById("year-selector").value);
+          const day = Math.min(
+            selectedDate.getDate(),
+            new Date(year, month + 1, 0).getDate()
+          );
+          selectedDate.setFullYear(year, month, day);
+          updateDatePicker();
+          updateDateDisplay();
+          if (currentTab === "clients") renderClients();
+          else renderFavorites();
+        } catch (err) {
+          console.error("Error updating date from selectors:", err);
+        }
+      }
+
       function updateDatePicker() {
-        const month = selectedDate.getMonth();
-        const year = selectedDate.getFullYear();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const grid = document.getElementById("date-grid");
-        grid.innerHTML = "";
+        try {
+          const month = selectedDate.getMonth();
+          const year = selectedDate.getFullYear();
+          const firstDay = new Date(year, month, 1).getDay();
+          const daysInMonth = new Date(year, month + 1, 0).getDate();
+          const grid = document.getElementById("date-grid");
+          grid.innerHTML = "";
 
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        days.forEach((day) => {
-          const div = document.createElement("div");
-          div.textContent = day;
-          div.className = "font-bold";
-          grid.appendChild(div);
-        });
+          const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          days.forEach((day) => {
+            const div = document.createElement("div");
+            div.textContent = day;
+            div.className = "font-bold";
+            grid.appendChild(div);
+          });
 
-        for (let i = 0; i < firstDay; i++) {
-          grid.appendChild(document.createElement("div"));
+          for (let i = 0; i < firstDay; i++) {
+            grid.appendChild(document.createElement("div"));
+          }
+
+          for (let day = 1; day <= daysInMonth; day++) {
+            const div = document.createElement("div");
+            div.textContent = day;
+            div.className =
+              day === selectedDate.getDate()
+                ? "bg-blue-500 text-white p-1 sm:p-2 rounded"
+                : "p-1 sm:p-2";
+            div.onclick = () => {
+              selectedDate.setFullYear(year, month, day);
+              updateDatePicker();
+              updateDateDisplay();
+              if (currentTab === "clients") renderClients();
+              else renderFavorites();
+            };
+            grid.appendChild(div);
+          }
+
+          document.getElementById("month-selector").value = month;
+          document.getElementById("year-selector").value = year;
+        } catch (err) {
+          console.error("Error updating date picker:", err);
         }
-
-        for (let day = 1; day <= daysInMonth; day++) {
-          const div = document.createElement("div");
-          div.textContent = day;
-          div.className =
-            day === selectedDate.getDate()
-              ? "bg-blue-500 text-white p-1 sm:p-2 rounded"
-              : "p-1 sm:p-2";
-          div.onclick = () => {
-            selectedDate.setDate(day);
-            renderDatePicker();
-            updateDateDisplay();
-            if (currentTab === "clients") renderClients();
-            else renderFavorites();
-          };
-          grid.appendChild(div);
-        }
-
-        document.getElementById("month-selector").value = month;
-        document.getElementById("year-selector").value = year;
       }
 
       function updateDateDisplay() {
-        const options = { day: "numeric", month: "long", year: "numeric" };
-        document.getElementById("date-display").textContent =
-          selectedDate.toLocaleDateString("en-US", options);
+        try {
+          const options = { day: "numeric", month: "long", year: "numeric" };
+          document.getElementById("date-display").textContent =
+            selectedDate.toLocaleDateString("en-US", options);
+        } catch (err) {
+          console.error("Error updating date display:", err);
+        }
       }
 
       function getDateKey(date) {
@@ -610,7 +634,6 @@
           });
         });
 
-        // Sort favorites based on favoritesOrder
         if (favoritesOrder.length > 0) {
           const orderedFavorites = [];
           const unorderedFavorites = favorites.filter(
@@ -656,18 +679,14 @@
           const destIndex = favoritesOrder.indexOf(destId);
 
           if (srcIndex !== -1 && destIndex !== -1) {
-            // Reorder within favoritesOrder
             favoritesOrder.splice(srcIndex, 1);
             favoritesOrder.splice(destIndex, 0, srcId);
           } else if (srcIndex !== -1) {
-            // Move src to dest position
             favoritesOrder.splice(srcIndex, 1);
             favoritesOrder.splice(favoritesOrder.indexOf(destId) + 1, 0, srcId);
           } else if (destIndex !== -1) {
-            // Add src to dest position
             favoritesOrder.splice(destIndex + 1, 0, srcId);
           } else {
-            // Add new favorite
             favoritesOrder.push(srcId);
           }
 
