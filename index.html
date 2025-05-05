@@ -74,10 +74,6 @@
           font-size: 10px;
           padding: 2px;
         }
-        .date-grid div {
-          padding: 2px;
-          font-size: 10px;
-        }
         .tab-button {
           padding: 6px 12px;
           font-size: 12px;
@@ -99,53 +95,6 @@
       <h1 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
         Client Info Manager
       </h1>
-      <div class="mb-3 sm:mb-4">
-        <h2
-          id="date-display"
-          class="text-lg sm:text-xl font-semibold cursor-pointer"
-          onclick="toggleDatePicker()"
-        >
-          1 May 2025
-        </h2>
-        <div
-          id="date-picker"
-          class="hidden mt-2 p-3 sm:p-4 bg-gray-50 border rounded-lg"
-        >
-          <div class="flex justify-between mb-2">
-            <select
-              id="month-selector"
-              class="p-1 sm:p-2 border rounded text-xs sm:text-sm"
-              onchange="updateDateFromSelectors()"
-            >
-              <option value="0">January</option>
-              <option value="1">February</option>
-              <option value="2">March</option>
-              <option value="3">April</option>
-              <option value="4">May</option>
-              <option value="5">June</option>
-              <option value="6">July</option>
-              <option value="7">August</option>
-              <option value="8">September</option>
-              <option value="9">October</option>
-              <option value="10">November</option>
-              <option value="11">December</option>
-            </select>
-            <input
-              type="number"
-              id="year-selector"
-              class="p-1 sm:p-2 border rounded w-16 sm:w-20 text-xs sm:text-sm"
-              value="2025"
-              min="2000"
-              max="2099"
-              onchange="updateDateFromSelectors()"
-            />
-          </div>
-          <div
-            id="date-grid"
-            class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm date-grid"
-          ></div>
-        </div>
-      </div>
       <div class="mb-3 sm:mb-4">
         <h3 class="text-base sm:text-lg font-semibold mb-2">Add New Client</h3>
         <div class="flex flex-col sm:flex-row gap-2">
@@ -207,7 +156,6 @@
           <table class="border-collapse">
             <thead>
               <tr class="bg-gray-200">
-                <th class="border">Date</th>
                 <th class="border">Name</th>
                 <th class="border">Market/Category</th>
                 <th class="border">Page/Link</th>
@@ -226,7 +174,6 @@
           <table class="border-collapse">
             <thead>
               <tr class="bg-gray-200">
-                <th class="border">Date</th>
                 <th class="border">Name</th>
                 <th class="border">Market/Category</th>
                 <th class="border">Page/Link</th>
@@ -261,19 +208,18 @@
       </div>
     </div>
     <script>
-      let clients = {};
+      let clients = [];
       let favoritesOrder = [];
-      let selectedDate = new Date(2025, 4, 1);
       let currentTab = "clients";
 
       function loadData() {
         try {
           const savedClients = localStorage.getItem("client_info");
-          clients = savedClients ? JSON.parse(savedClients) : {};
+          clients = savedClients && typeof savedClients === 'string' ? JSON.parse(savedClients) : [];
+          if (!Array.isArray(clients)) clients = [];
           const savedFavorites = localStorage.getItem("favorites_order");
-          favoritesOrder = savedFavorites ? JSON.parse(savedFavorites) : [];
-          updateDatePicker();
-          updateDateDisplay();
+          favoritesOrder = savedFavorites && typeof savedFavorites === 'string' ? JSON.parse(savedFavorites) : [];
+          if (!Array.isArray(favoritesOrder)) favoritesOrder = [];
           showTab(currentTab);
         } catch (err) {
           console.error("Error loading data:", err);
@@ -283,6 +229,7 @@
       function saveClients() {
         try {
           localStorage.setItem("client_info", JSON.stringify(clients));
+          console.log("Clients saved:", clients);
         } catch (err) {
           console.error("Error saving clients:", err);
         }
@@ -290,10 +237,7 @@
 
       function saveFavoritesOrder() {
         try {
-          localStorage.setItem(
-            "favorites_order",
-            JSON.stringify(favoritesOrder)
-          );
+          localStorage.setItem("favorites_order", JSON.stringify(favoritesOrder));
         } catch (err) {
           console.error("Error saving favorites order:", err);
         }
@@ -324,15 +268,14 @@
           reader.onload = (e) => {
             try {
               const data = JSON.parse(e.target.result);
-              clients = data.clients || {};
-              favoritesOrder = data.favoritesOrder || [];
+              clients = Array.isArray(data.clients) ? data.clients : [];
+              favoritesOrder = Array.isArray(data.favoritesOrder) ? data.favoritesOrder : [];
               saveClients();
               saveFavoritesOrder();
-              updateDatePicker();
-              updateDateDisplay();
               showTab(currentTab);
             } catch (err) {
               console.error("Error parsing imported data:", err);
+              alert("Failed to import data. Check the console for details.");
             }
           };
           reader.readAsText(file);
@@ -342,109 +285,36 @@
         }
       }
 
-      function toggleDatePicker() {
-        document.getElementById("date-picker").classList.toggle("hidden");
-      }
-
-      function updateDateFromSelectors() {
-        try {
-          const month = parseInt(document.getElementById("month-selector").value);
-          const year = parseInt(document.getElementById("year-selector").value);
-          const day = Math.min(
-            selectedDate.getDate(),
-            new Date(year, month + 1, 0).getDate()
-          );
-          selectedDate.setFullYear(year, month, day);
-          updateDatePicker();
-          updateDateDisplay();
-          if (currentTab === "clients") renderClients();
-          else renderFavorites();
-        } catch (err) {
-          console.error("Error updating date from selectors:", err);
-        }
-      }
-
-      function updateDatePicker() {
-        try {
-          const month = selectedDate.getMonth();
-          const year = selectedDate.getFullYear();
-          const firstDay = new Date(year, month, 1).getDay();
-          const daysInMonth = new Date(year, month + 1, 0).getDate();
-          const grid = document.getElementById("date-grid");
-          grid.innerHTML = "";
-
-          const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-          days.forEach((day) => {
-            const div = document.createElement("div");
-            div.textContent = day;
-            div.className = "font-bold";
-            grid.appendChild(div);
-          });
-
-          for (let i = 0; i < firstDay; i++) {
-            grid.appendChild(document.createElement("div"));
-          }
-
-          for (let day = 1; day <= daysInMonth; day++) {
-            const div = document.createElement("div");
-            div.textContent = day;
-            div.className =
-              day === selectedDate.getDate()
-                ? "bg-blue-500 text-white p-1 sm:p-2 rounded"
-                : "p-1 sm:p-2";
-            div.onclick = () => {
-              selectedDate.setFullYear(year, month, day);
-              updateDatePicker();
-              updateDateDisplay();
-              if (currentTab === "clients") renderClients();
-              else renderFavorites();
-            };
-            grid.appendChild(div);
-          }
-
-          document.getElementById("month-selector").value = month;
-          document.getElementById("year-selector").value = year;
-        } catch (err) {
-          console.error("Error updating date picker:", err);
-        }
-      }
-
-      function updateDateDisplay() {
-        try {
-          const options = { day: "numeric", month: "long", year: "numeric" };
-          document.getElementById("date-display").textContent =
-            selectedDate.toLocaleDateString("en-US", options);
-        } catch (err) {
-          console.error("Error updating date display:", err);
-        }
-      }
-
-      function getDateKey(date) {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(date.getDate()).padStart(2, "0")}`;
-      }
-
       function addClient() {
         try {
-          const name = document.getElementById("client-name").value.trim();
-          const market = document.getElementById("client-market").value.trim();
-          const page = document.getElementById("client-page").value.trim();
-          const contact = document
-            .getElementById("client-contact")
-            .value.trim();
-          const need = document.getElementById("client-need").value;
+          console.log("Starting addClient");
+          const nameInput = document.getElementById("client-name");
+          const marketInput = document.getElementById("client-market");
+          const pageInput = document.getElementById("client-page");
+          const contactInput = document.getElementById("client-contact");
+          const needInput = document.getElementById("client-need");
 
-          if (!name || !market || !page || !need) {
-            alert(
-              "Please fill all required fields (Name, Market/Category, Page/Link, Need)"
-            );
+          console.log("Input elements:", { nameInput, marketInput, pageInput, contactInput, needInput });
+
+          if (!nameInput || !marketInput || !pageInput || !contactInput || !needInput) {
+            console.error("One or more input elements not found");
+            alert("Error: Form elements missing. Please refresh the page.");
             return;
           }
 
-          const dateKey = getDateKey(selectedDate);
-          if (!clients[dateKey]) clients[dateKey] = [];
+          const name = nameInput.value ? nameInput.value.trim() : "";
+          const market = marketInput.value ? marketInput.value.trim() : "";
+          const page = pageInput.value ? pageInput.value.trim() : "";
+          const contact = contactInput.value ? contactInput.value.trim() : "";
+          const need = needInput.value ? needInput.value.trim() : "Logo/PFP";
+
+          console.log("Input values:", { name, market, page, contact, need });
+
+          if (!name || !market || !page) {
+            console.warn("Validation failed: Missing required fields");
+            alert("Please fill all required fields (Name, Market/Category, Page/Link)");
+            return;
+          }
 
           const newClient = {
             id: Date.now(),
@@ -457,135 +327,165 @@
             followUp: false,
             canBe: "Pending",
           };
-          clients[dateKey].push(newClient);
+
+          console.log("New client created:", newClient);
+          clients.push(newClient);
+          console.log("Client added to array:", clients);
 
           saveClients();
-          showTab(currentTab);
+          console.log("Calling showTab('clients')");
+          showTab("clients");
+          console.log("Calling resetForm");
           resetForm();
+          console.log("addClient completed successfully");
         } catch (err) {
-          console.error("Error adding client:", err);
+          console.error("Error in addClient:", err.message, err.stack);
+          alert("Failed to add client: " + err.message);
         }
       }
 
       function resetForm() {
-        document.getElementById("client-name").value = "";
-        document.getElementById("client-market").value = "";
-        document.getElementById("client-page").value = "";
-        document.getElementById("client-contact").value = "";
-        document.getElementById("client-need").value = "Logo/PFP";
+        try {
+          console.log("Starting resetForm");
+          const nameInput = document.getElementById("client-name");
+          const marketInput = document.getElementById("client-market");
+          const pageInput = document.getElementById("client-page");
+          const contactInput = document.getElementById("client-contact");
+          const needInput = document.getElementById("client-need");
+
+          if (nameInput) nameInput.value = "";
+          if (marketInput) marketInput.value = "";
+          if (pageInput) pageInput.value = "";
+          if (contactInput) contactInput.value = "";
+          if (needInput) needInput.value = "Logo/PFP";
+          console.log("resetForm completed");
+        } catch (err) {
+          console.error("Error in resetForm:", err.message, err.stack);
+        }
       }
 
       function showTab(tab) {
-        currentTab = tab;
-        const clientsTab = document.getElementById("clients-tab");
-        const favoritesTab = document.getElementById("favorites-tab");
-        const clientsContent = document.getElementById("clients-content");
-        const favoritesContent = document.getElementById("favorites-content");
+        try {
+          console.log("Starting showTab:", tab);
+          currentTab = tab;
+          const clientsTab = document.getElementById("clients-tab");
+          const favoritesTab = document.getElementById("favorites-tab");
+          const clientsContent = document.getElementById("clients-content");
+          const favoritesContent = document.getElementById("favorites-content");
 
-        if (tab === "clients") {
-          clientsTab.classList.add("active");
-          favoritesTab.classList.remove("active");
-          clientsContent.classList.remove("hidden");
-          favoritesContent.classList.add("hidden");
-          renderClients();
-        } else {
-          clientsTab.classList.remove("active");
-          favoritesTab.classList.add("active");
-          clientsContent.classList.add("hidden");
-          favoritesContent.classList.remove("hidden");
-          renderFavorites();
+          if (!clientsTab || !favoritesTab || !clientsContent || !favoritesContent) {
+            console.error("One or more tab elements not found");
+            return;
+          }
+
+          if (tab === "clients") {
+            clientsTab.classList.add("active");
+            favoritesTab.classList.remove("active");
+            clientsContent.classList.remove("hidden");
+            favoritesContent.classList.add("hidden");
+            renderClients();
+          } else {
+            clientsTab.classList.remove("active");
+            favoritesTab.classList.add("active");
+            clientsContent.classList.add("hidden");
+            favoritesContent.classList.remove("hidden");
+            renderFavorites();
+          }
+          console.log("showTab completed");
+        } catch (err) {
+          console.error("Error in showTab:", err.message, err.stack);
         }
       }
 
       function renderClients() {
         try {
+          console.log("Starting renderClients:", clients);
           const tbody = document.getElementById("client-table-body");
+          if (!tbody) {
+            console.error("Client table body not found");
+            return;
+          }
           tbody.innerHTML = "";
-          const dateKey = getDateKey(selectedDate);
-          const dateStr = selectedDate.toLocaleDateString("en-US", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
 
-          (clients[dateKey] || []).forEach((client) => {
+          clients.forEach((client) => {
             const row = document.createElement("tr");
             row.className =
-              client.canBe === "Yes"
-                ? "yes"
-                : client.canBe === "No"
-                ? "no"
-                : "";
+              client.canBe === "Yes" ? "yes" : client.canBe === "No" ? "no" : "";
             row.innerHTML = `
-                        <td class="border">${dateStr}</td>
-                        <td class="border">${client.name}</td>
-                        <td class="border">${client.market}</td>
-                        <td class="border link" onclick="openLink('${
-                          client.page
-                        }')">${client.page || "N/A"}</td>
-                        <td class="border contact" onclick="copyToClipboard('${
-                          client.contact
-                        }')">${client.contact || "N/A"}</td>
-                        <td class="border">
-                            <select onchange="updateNeed(${
-                              client.id
-                            }, this.value)" class="border rounded text-xs">
-                                <option value="Logo/PFP" ${
-                                  client.need === "Logo/PFP" ? "selected" : ""
-                                }>Logo/PFP</option>
-                                <option value="Website" ${
-                                  client.need === "Website" ? "selected" : ""
-                                }>Website</option>
-                                <option value="Video" ${
-                                  client.need === "Video" ? "selected" : ""
-                                }>Video</option>
-                            </select>
-                        </td>
-                        <td class="border">
-                            <input type="checkbox" ${
-                              client.firstContact ? "checked" : ""
-                            } onchange="updateFirstContact(${
+              <td class="border">${client.name}</td>
+              <td class="border">${client.market}</td>
+              <td class="border link" onclick="openLink('${client.page}')">${
+                client.page || "N/A"
+              }</td>
+              <td class="border contact" onclick="copyToClipboard('${
+                client.contact
+              }')">${client.contact || "N/A"}</td>
+              <td class="border">
+                <select onchange="updateNeed(${
+                  client.id
+                }, this.value)" class="border rounded text-xs">
+                  <option value="Logo/PFP" ${
+                    client.need === "Logo/PFP" ? "selected" : ""
+                  }>Logo/PFP</option>
+                  <option value="Website" ${
+                    client.need === "Website" ? "selected" : ""
+                  }>Website</option>
+                  <option value="Video" ${
+                    client.need === "Video" ? "selected" : ""
+                  }>Video</option>
+                </select>
+              </td>
+              <td class="border">
+                <input type="checkbox" ${
+                  client.firstContact ? "checked" : ""
+                } onchange="updateFirstContact(${
               client.id
             }, this.checked)" class="h-3 w-3">
-                        </td>
-                        <td class="border">
-                            <input type="checkbox" ${
-                              client.followUp ? "checked" : ""
-                            } onchange="updateFollowUp(${
+              </td>
+              <td class="border">
+                <input type="checkbox" ${
+                  client.followUp ? "checked" : ""
+                } onchange="updateFollowUp(${
               client.id
             }, this.checked)" class="h-3 w-3">
-                        </td>
-                        <td class="border">
-                            <select onchange="updateCanBe(${
-                              client.id
-                            }, this.value)" class="border rounded text-xs">
-                                <option value="Pending" ${
-                                  client.canBe === "Pending" ? "selected" : ""
-                                }>Pending</option>
-                                <option value="Yes" ${
-                                  client.canBe === "Yes" ? "selected" : ""
-                                }>Yes</option>
-                                <option value="No" ${
-                                  client.canBe === "No" ? "selected" : ""
-                                }>No</option>
-                            </select>
-                        </td>
-                        <td class="border">
-                            <button onclick="deleteClient(${
-                              client.id
-                            })" class="bg-red-500 text-white p-1 px-2 rounded hover:bg-red-600 text-xs">Delete</button>
-                        </td>
-                    `;
+              </td>
+              <td class="border">
+                <select onchange="updateCanBe(${
+                  client.id
+                }, this.value)" class="border rounded text-xs">
+                  <option value="Pending" ${
+                    client.canBe === "Pending" ? "selected" : ""
+                  }>Pending</option>
+                  <option value="Yes" ${
+                    client.canBe === "Yes" ? "selected" : ""
+                  }>Yes</option>
+                  <option value="No" ${
+                    client.canBe === "No" ? "selected" : ""
+                  }>No</option>
+                </select>
+              </td>
+              <td class="border">
+                <button onclick="deleteClient(${
+                  client.id
+                })" class="bg-red-500 text-white p-1 px-2 rounded hover:bg-red-600 text-xs">Delete</button>
+              </td>
+            `;
             tbody.appendChild(row);
           });
+          console.log("renderClients completed");
         } catch (err) {
-          console.error("Error rendering clients:", err);
+          console.error("Error in renderClients:", err.message, err.stack);
         }
       }
 
       function renderFavorites() {
         try {
+          console.log("Starting renderFavorites");
           const tbody = document.getElementById("favorites-table-body");
+          if (!tbody) {
+            console.error("Favorites table body not found");
+            return;
+          }
           tbody.innerHTML = "";
           const favorites = getFavorites();
 
@@ -598,152 +498,176 @@
             row.addEventListener("dragenter", handleDragEnter);
             row.addEventListener("drop", handleDrop);
             row.innerHTML = `
-                        <td class="border">${client.dateStr}</td>
-                        <td class="border">${client.name}</td>
-                        <td class="border">${client.market}</td>
-                        <td class="border link" onclick="openLink('${
-                          client.page
-                        }')">${client.page || "N/A"}</td>
-                        <td class="border contact" onclick="copyToClipboard('${
-                          client.contact
-                        }')">${client.contact || "N/A"}</td>
-                        <td class="border">${client.need}</td>
-                    `;
+              <td class="border">${client.name}</td>
+              <td class="border">${client.market}</td>
+              <td class="border link" onclick="openLink('${client.page}')">${
+                client.page || "N/A"
+              }</td>
+              <td class="border contact" onclick="copyToClipboard('${
+                client.contact
+              }')">${client.contact || "N/A"}</td>
+              <td class="border">${client.need}</td>
+            `;
             tbody.appendChild(row);
           });
+          console.log("renderFavorites completed");
         } catch (err) {
-          console.error("Error rendering favorites:", err);
+          console.error("Error in renderFavorites:", err.message, err.stack);
         }
       }
 
       function getFavorites() {
-        const favorites = [];
-        Object.keys(clients).forEach((dateKey) => {
-          clients[dateKey].forEach((client) => {
-            if (client.canBe === "Yes") {
-              favorites.push({
-                ...client,
-                dateKey,
-                dateStr: new Date(dateKey).toLocaleDateString("en-US", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                }),
-              });
-            }
-          });
-        });
+        try {
+          console.log("Starting getFavorites");
+          const favorites = clients.filter((client) => client.canBe === "Yes");
 
-        if (favoritesOrder.length > 0) {
-          const orderedFavorites = [];
-          const unorderedFavorites = favorites.filter(
-            (fav) => !favoritesOrder.includes(fav.id)
-          );
-          favoritesOrder.forEach((id) => {
-            const fav = favorites.find((f) => f.id === id);
-            if (fav) orderedFavorites.push(fav);
-          });
-          return [...orderedFavorites, ...unorderedFavorites];
+          if (favoritesOrder.length > 0) {
+            const orderedFavorites = [];
+            const unorderedFavorites = favorites.filter(
+              (fav) => !favoritesOrder.includes(fav.id)
+            );
+            favoritesOrder.forEach((id) => {
+              const fav = favorites.find((f) => f.id === id);
+              if (fav) orderedFavorites.push(fav);
+            });
+            console.log("getFavorites completed:", [...orderedFavorites, ...unorderedFavorites]);
+            return [...orderedFavorites, ...unorderedFavorites];
+          }
+          console.log("getFavorites completed:", favorites);
+          return favorites;
+        } catch (err) {
+          console.error("Error in getFavorites:", err.message, err.stack);
+          return [];
         }
-        return favorites;
       }
 
       let dragSrcEl = null;
 
       function handleDragStart(e) {
-        dragSrcEl = this;
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/html", this.outerHTML);
+        try {
+          console.log("Starting handleDragStart");
+          dragSrcEl = this;
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/html", this.outerHTML);
+          console.log("handleDragStart completed");
+        } catch (err) {
+          console.error("Error in handleDragStart:", err.message, err.stack);
+        }
       }
 
       function handleDragOver(e) {
-        if (e.preventDefault) {
-          e.preventDefault();
+        try {
+          if (e.preventDefault) {
+            e.preventDefault();
+          }
+          e.dataTransfer.dropEffect = "move";
+          console.log("handleDragOver completed");
+          return false;
+        } catch (err) {
+          console.error("Error in handleDragOver:", err.message, err.stack);
         }
-        e.dataTransfer.dropEffect = "move";
-        return false;
       }
 
       function handleDragEnter(e) {
-        this.classList.add("bg-gray-300");
+        try {
+          this.classList.add("bg-gray-300");
+          console.log("handleDragEnter completed");
+        } catch (err) {
+          console.error("Error in handleDragEnter:", err.message, err.stack);
+        }
       }
 
       function handleDrop(e) {
-        if (e.stopPropagation) {
-          e.stopPropagation();
-        }
-        if (dragSrcEl !== this) {
-          const srcId = parseInt(dragSrcEl.getAttribute("data-id"));
-          const destId = parseInt(this.getAttribute("data-id"));
-          const srcIndex = favoritesOrder.indexOf(srcId);
-          const destIndex = favoritesOrder.indexOf(destId);
-
-          if (srcIndex !== -1 && destIndex !== -1) {
-            favoritesOrder.splice(srcIndex, 1);
-            favoritesOrder.splice(destIndex, 0, srcId);
-          } else if (srcIndex !== -1) {
-            favoritesOrder.splice(srcIndex, 1);
-            favoritesOrder.splice(favoritesOrder.indexOf(destId) + 1, 0, srcId);
-          } else if (destIndex !== -1) {
-            favoritesOrder.splice(destIndex + 1, 0, srcId);
-          } else {
-            favoritesOrder.push(srcId);
+        try {
+          if (e.stopPropagation) {
+            e.stopPropagation();
           }
+          if (dragSrcEl !== this) {
+            const srcId = parseInt(dragSrcEl.getAttribute("data-id"));
+            const destId = parseInt(this.getAttribute("data-id"));
+            const srcIndex = favoritesOrder.indexOf(srcId);
+            const destIndex = favoritesOrder.indexOf(destId);
 
-          saveFavoritesOrder();
-          renderFavorites();
+            if (srcIndex !== -1 && destIndex !== -1) {
+              favoritesOrder.splice(srcIndex, 1);
+              favoritesOrder.splice(destIndex, 0, srcId);
+            } else if (srcIndex !== -1) {
+              favoritesOrder.splice(srcIndex, 1);
+              favoritesOrder.splice(favoritesOrder.indexOf(destId) + 1, 0, srcId);
+            } else if (destIndex !== -1) {
+              favoritesOrder.splice(destIndex + 1, 0, srcId);
+            } else {
+              favoritesOrder.push(srcId);
+            }
+
+            saveFavoritesOrder();
+            renderFavorites();
+          }
+          this.classList.remove("bg-gray-300");
+          console.log("handleDrop completed");
+          return false;
+        } catch (err) {
+          console.error("Error in handleDrop:", err.message, err.stack);
         }
-        this.classList.remove("bg-gray-300");
-        return false;
       }
 
       function openLink(url) {
-        if (url && url !== "N/A") {
-          const formattedUrl = url.match(/^https?:\/\//)
-            ? url
-            : `https://${url}`;
-          window.open(formattedUrl, "_blank");
+        try {
+          if (url && url !== "N/A") {
+            const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+            window.open(formattedUrl, "_blank");
+          }
+          console.log("openLink completed");
+        } catch (err) {
+          console.error("Error in openLink:", err.message, err.stack);
         }
       }
 
       function copyToClipboard(text) {
-        if (text && text !== "N/A") {
-          navigator.clipboard.writeText(text).catch((err) => {
-            console.error("Error copying to clipboard:", err);
-          });
+        try {
+          if (text && text !== "N/A") {
+            navigator.clipboard.writeText(text).catch((err) => {
+              console.error("Clipboard error:", err.message, err.stack);
+            });
+          }
+          console.log("copyToClipboard completed");
+        } catch (err) {
+          console.error("Error in copyToClipboard:", err.message, err.stack);
         }
       }
 
       function updateFirstContact(id, checked) {
         try {
-          const dateKey = getDateKey(selectedDate);
-          clients[dateKey] = clients[dateKey].map((client) =>
+          console.log("Starting updateFirstContact:", id, checked);
+          clients = clients.map((client) =>
             client.id === id ? { ...client, firstContact: checked } : client
           );
           saveClients();
           showTab(currentTab);
+          console.log("updateFirstContact completed");
         } catch (err) {
-          console.error("Error updating First Contact:", err);
+          console.error("Error in updateFirstContact:", err.message, err.stack);
         }
       }
 
       function updateFollowUp(id, checked) {
         try {
-          const dateKey = getDateKey(selectedDate);
-          clients[dateKey] = clients[dateKey].map((client) =>
+          console.log("Starting updateFollowUp:", id, checked);
+          clients = clients.map((client) =>
             client.id === id ? { ...client, followUp: checked } : client
           );
           saveClients();
           showTab(currentTab);
+          console.log("updateFollowUp completed");
         } catch (err) {
-          console.error("Error updating Follow Up:", err);
+          console.error("Error in updateFollowUp:", err.message, err.stack);
         }
       }
 
       function updateCanBe(id, value) {
         try {
-          const dateKey = getDateKey(selectedDate);
-          clients[dateKey] = clients[dateKey].map((client) =>
+          console.log("Starting updateCanBe:", id, value);
+          clients = clients.map((client) =>
             client.id === id ? { ...client, canBe: value } : client
           );
           if (value === "Yes" && !favoritesOrder.includes(id)) {
@@ -755,42 +679,47 @@
           }
           saveClients();
           showTab(currentTab);
+          console.log("updateCanBe completed");
         } catch (err) {
-          console.error("Error updating Can Be:", err);
+          console.error("Error in updateCanBe:", err.message, err.stack);
         }
       }
 
       function updateNeed(id, value) {
         try {
-          const dateKey = getDateKey(selectedDate);
-          clients[dateKey] = clients[dateKey].map((client) =>
+          console.log("Starting updateNeed:", id, value);
+          clients = clients.map((client) =>
             client.id === id ? { ...client, need: value } : client
           );
           saveClients();
           showTab(currentTab);
+          console.log("updateNeed completed");
         } catch (err) {
-          console.error("Error updating Need:", err);
+          console.error("Error in updateNeed:", err.message, err.stack);
         }
       }
 
       function deleteClient(id) {
         try {
-          const dateKey = getDateKey(selectedDate);
-          clients[dateKey] = clients[dateKey].filter(
-            (client) => client.id !== id
-          );
-          if (clients[dateKey].length === 0) delete clients[dateKey];
+          console.log("Starting deleteClient:", id);
+          clients = clients.filter((client) => client.id !== id);
           favoritesOrder = favoritesOrder.filter((favId) => favId !== id);
           saveClients();
           saveFavoritesOrder();
           showTab(currentTab);
+          console.log("deleteClient completed");
         } catch (err) {
-          console.error("Error deleting client:", err);
+          console.error("Error in deleteClient:", err.message, err.stack);
         }
       }
 
       document.addEventListener("DOMContentLoaded", () => {
-        loadData();
+        try {
+          console.log("DOM fully loaded, calling loadData");
+          loadData();
+        } catch (err) {
+          console.error("Error in DOMContentLoaded:", err.message, err.stack);
+        }
       });
     </script>
   </body>
