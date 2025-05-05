@@ -126,6 +126,8 @@
             <option value="Logo/PFP">Logo/PFP</option>
             <option value="Website">Website</option>
             <option value="Video">Video</option>
+            <option value="Thumbnail/Post">Thumbnail/Post</option>
+            <option value="Illustration">Illustration</option>
           </select>
           <button
             onclick="addClient()"
@@ -215,10 +217,16 @@
       function loadData() {
         try {
           const savedClients = localStorage.getItem("client_info");
-          clients = savedClients && typeof savedClients === 'string' ? JSON.parse(savedClients) : [];
+          clients =
+            savedClients && typeof savedClients === "string"
+              ? JSON.parse(savedClients)
+              : [];
           if (!Array.isArray(clients)) clients = [];
           const savedFavorites = localStorage.getItem("favorites_order");
-          favoritesOrder = savedFavorites && typeof savedFavorites === 'string' ? JSON.parse(savedFavorites) : [];
+          favoritesOrder =
+            savedFavorites && typeof savedFavorites === "string"
+              ? JSON.parse(savedFavorites)
+              : [];
           if (!Array.isArray(favoritesOrder)) favoritesOrder = [];
           showTab(currentTab);
         } catch (err) {
@@ -237,7 +245,10 @@
 
       function saveFavoritesOrder() {
         try {
-          localStorage.setItem("favorites_order", JSON.stringify(favoritesOrder));
+          localStorage.setItem(
+            "favorites_order",
+            JSON.stringify(favoritesOrder)
+          );
         } catch (err) {
           console.error("Error saving favorites order:", err);
         }
@@ -269,7 +280,9 @@
             try {
               const data = JSON.parse(e.target.result);
               clients = Array.isArray(data.clients) ? data.clients : [];
-              favoritesOrder = Array.isArray(data.favoritesOrder) ? data.favoritesOrder : [];
+              favoritesOrder = Array.isArray(data.favoritesOrder)
+                ? data.favoritesOrder
+                : [];
               saveClients();
               saveFavoritesOrder();
               showTab(currentTab);
@@ -294,9 +307,21 @@
           const contactInput = document.getElementById("client-contact");
           const needInput = document.getElementById("client-need");
 
-          console.log("Input elements:", { nameInput, marketInput, pageInput, contactInput, needInput });
+          console.log("Input elements:", {
+            nameInput,
+            marketInput,
+            pageInput,
+            contactInput,
+            needInput,
+          });
 
-          if (!nameInput || !marketInput || !pageInput || !contactInput || !needInput) {
+          if (
+            !nameInput ||
+            !marketInput ||
+            !pageInput ||
+            !contactInput ||
+            !needInput
+          ) {
             console.error("One or more input elements not found");
             alert("Error: Form elements missing. Please refresh the page.");
             return;
@@ -312,7 +337,9 @@
 
           if (!name || !market || !page) {
             console.warn("Validation failed: Missing required fields");
-            alert("Please fill all required fields (Name, Market/Category, Page/Link)");
+            alert(
+              "Please fill all required fields (Name, Market/Category, Page/Link)"
+            );
             return;
           }
 
@@ -373,7 +400,12 @@
           const clientsContent = document.getElementById("clients-content");
           const favoritesContent = document.getElementById("favorites-content");
 
-          if (!clientsTab || !favoritesTab || !clientsContent || !favoritesContent) {
+          if (
+            !clientsTab ||
+            !favoritesTab ||
+            !clientsContent ||
+            !favoritesContent
+          ) {
             console.error("One or more tab elements not found");
             return;
           }
@@ -410,13 +442,17 @@
           clients.forEach((client) => {
             const row = document.createElement("tr");
             row.className =
-              client.canBe === "Yes" ? "yes" : client.canBe === "No" ? "no" : "";
+              client.canBe === "Yes"
+                ? "yes"
+                : client.canBe === "No"
+                ? "no"
+                : "";
             row.innerHTML = `
               <td class="border">${client.name}</td>
               <td class="border">${client.market}</td>
               <td class="border link" onclick="openLink('${client.page}')">${
-                client.page || "N/A"
-              }</td>
+              client.page || "N/A"
+            }</td>
               <td class="border contact" onclick="copyToClipboard('${
                 client.contact
               }')">${client.contact || "N/A"}</td>
@@ -433,6 +469,12 @@
                   <option value="Video" ${
                     client.need === "Video" ? "selected" : ""
                   }>Video</option>
+                  <option value="Thumbnail/Post" ${
+                    client.need === "Thumbnail/Post" ? "selected" : ""
+                  }>Thumbnail/Post</option>
+                  <option value="Illustration" ${
+                    client.need === "Illustration" ? "selected" : ""
+                  }>Illustration</option>
                 </select>
               </td>
               <td class="border">
@@ -501,8 +543,8 @@
               <td class="border">${client.name}</td>
               <td class="border">${client.market}</td>
               <td class="border link" onclick="openLink('${client.page}')">${
-                client.page || "N/A"
-              }</td>
+              client.page || "N/A"
+            }</td>
               <td class="border contact" onclick="copyToClipboard('${
                 client.contact
               }')">${client.contact || "N/A"}</td>
@@ -530,7 +572,10 @@
               const fav = favorites.find((f) => f.id === id);
               if (fav) orderedFavorites.push(fav);
             });
-            console.log("getFavorites completed:", [...orderedFavorites, ...unorderedFavorites]);
+            console.log("getFavorites completed:", [
+              ...orderedFavorites,
+              ...unorderedFavorites,
+            ]);
             return [...orderedFavorites, ...unorderedFavorites];
           }
           console.log("getFavorites completed:", favorites);
@@ -593,7 +638,11 @@
               favoritesOrder.splice(destIndex, 0, srcId);
             } else if (srcIndex !== -1) {
               favoritesOrder.splice(srcIndex, 1);
-              favoritesOrder.splice(favoritesOrder.indexOf(destId) + 1, 0, srcId);
+              favoritesOrder.splice(
+                favoritesOrder.indexOf(destId) + 1,
+                0,
+                srcId
+              );
             } else if (destIndex !== -1) {
               favoritesOrder.splice(destIndex + 1, 0, srcId);
             } else {
@@ -614,7 +663,9 @@
       function openLink(url) {
         try {
           if (url && url !== "N/A") {
-            const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+            const formattedUrl = url.match(/^https?:\/\//)
+              ? url
+              : `https://${url}`;
             window.open(formattedUrl, "_blank");
           }
           console.log("openLink completed");
